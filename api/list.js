@@ -1,16 +1,23 @@
-// api/list.js —— 列出最近上传的对象及其元数据 + CID
+// api/list.js —— 列出对象+元数据+CID（Node.js Serverless）
+// 关键：动态 CORS + 禁止缓存，避免 Failed to fetch
 import { S3Client, ListObjectsV2Command, HeadObjectCommand } from "@aws-sdk/client-s3";
 
 export const config = { api: { bodyParser: false } };
 
-const setCORS = (res) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
+function setCORS(req, res) {
+  const origin = req.headers.origin || "*";
+  const reqHeaders = req.headers["access-control-request-headers"];
+  res.setHeader("Access-Control-Allow-Origin", origin);
+  res.setHeader("Vary", "Origin"); // 让 CDN 不同 Origin 单独缓存
   res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "content-type");
-};
+  res.setHeader("Access-Control-Allow-Headers", reqHeaders || "content-type,accept");
+  // 禁止缓存，避免下次取到不带 CORS 的副本
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+}
 
 export default async function handler(req, res) {
-  setCORS(res);
+  setCORS(req, res);
+
   if (req.method === "OPTIONS") return res.status(204).end();
   if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });
 
@@ -30,7 +37,6 @@ export default async function handler(req, res) {
       credentials: { accessKeyId, secretAccessKey },
     });
 
-    // 支持分页：?limit=20&token=xxxx
     const limit = Math.min(parseInt(req.query.limit || "20", 10), 50);
     const token = req.query.token;
 
@@ -40,7 +46,6 @@ export default async function handler(req, res) {
       ContinuationToken: token || undefined,
     }));
 
-    // 取每个对象的元数据（并行）
     const items = await Promise.all(
       (listed.Contents || [])
         .sort((a,b) => (b.LastModified?.getTime()||0) - (a.LastModified?.getTime()||0))
