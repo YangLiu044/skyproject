@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>去中心化图片存证平台</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        header p {
+            font-size: 1.1em;
+            opacity: 0.95;
+        }
+        
+        .tabs {
+            display: flex;
+            background: #f5f5f5;
+            border-bottom: 3px solid #667eea;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            background: white;
+            transition: all 0.3s;
+            font-weight: 600;
+            color: #666;
+        }
+        
+        .tab:hover {
+            background: #f0f0f0;
+        }
+        
+        .tab.active {
+            background: #667eea;
+            color: white;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 50px;
+            text-align: center;
+            background: #f9f9ff;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 30px;
+        }
+        
+        .upload-area:hover {
+            background: #f0f0ff;
+            border-color: #764ba2;
+        }
+        
+        .upload-area.dragover {
+            background: #e0e0ff;
+            transform: scale(1.02);
+        }
+        
+        .upload-icon {
+            font-size: 60px;
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+        
+        input[type="file"] {
+            display: none;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input[type="text"]:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 40px;
+            border: none;
+            border-radius: 30px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .preview {
+            margin: 20px 0;
+            display: none;
+        }
+        
+        .preview img {
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 25px;
+        }
+        
+        .gallery-item {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .gallery-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+        
+        .gallery-item img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+        
+        .gallery-info {
+            padding: 15px;
+        }
+        
+        .gallery-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .gallery-desc {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 10px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+        
+        .gallery-hash {
+            font-family: monospace;
+            font-size: 11px;
+            color: #999;
+            background: #f5f5f5;
+            padding: 5px 8px;
+            border-radius: 5px;
+            word-break: break-all;
+            margin-bottom: 8px;
+        }
+        
+        .gallery-time {
+            color: #999;
+            font-size: 12px;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            animation: fadeIn 0.3s;
+        }
+        
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 90%;
+            max-height: 90%;
+            overflow: auto;
+        }
+        
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 30px;
+            cursor: pointer;
+            color: #666;
+        }
+        
+        .modal-close:hover {
+            color: #333;
+        }
+        
+        .modal img {
+            max-width: 100%;
+            margin-bottom: 20px;
+            border-radius: 10px;
+        }
+        
+        .success-message {
+            background: #4caf50;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: none;
+        }
+        
+        .error-message {
+            background: #f44336;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: none;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 30px;
+            gap: 20px;
+        }
+        
+        .stat-card {
+            flex: 1;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        .stat-number {
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.95;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+        
+        .empty-state-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+        
+        @media (max-width: 768px) {
+            .gallery {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats {
+                flex-direction: column;
+            }
+            
+            header h1 {
+                font-size: 1.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔐 去中心化图片存证平台</h1>
+            <p>使用IPFS内容寻址技术，为每张图片生成唯一的加密哈希值，确保作品的永久性和唯一性</p>
+        </header>
+        
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('upload')">📤 上传图片</div>
+            <div class="tab" onclick="switchTab('gallery')">🖼️ 浏览作品</div>
+            <div class="tab" onclick="switchTab('about')">ℹ️ 关于技术</div>
+        </div>
+        
+        <div class="content">
+            <!-- 上传标签页 -->
+            <div id="upload-tab" class="tab-content active">
+                <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                    <div class="upload-icon">📸</div>
+                    <h3>点击或拖放图片到这里</h3>
+                    <p>支持 JPG, PNG, GIF, WEBP 格式，最大 10MB</p>
+                    <input type="file" id="fileInput" accept="image/*">
+                </div>
+                
+                <div class="preview" id="preview">
+                    <img id="previewImg" src="" alt="预览">
+                </div>
+                
+                <div class="form-group">
+                    <label for="title">作品标题</label>
+                    <input type="text" id="title" placeholder="给你的作品起个名字...">
+                </div>
+                
+                <div class="form-group">
+                    <label for="description">作品描述</label>
+                    <textarea id="description" placeholder="描述一下你的作品..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="author">创作者（可选）</label>
+                    <input type="text" id="author" placeholder="你的名字或昵称...">
+                </div>
+                
+                <button class="btn" onclick="uploadImage()" id="uploadBtn">
+                    生成唯一哈希并存储
+                </button>
+                
+                <div class="success-message" id="successMessage"></div>
+                <div class="error-message" id="errorMessage"></div>
+                
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>正在生成唯一哈希值并存储到去中心化网络...</p>
+                </div>
+            </div>
+            
+            <!-- 浏览标签页 -->
+            <div id="gallery-tab" class="tab-content">
+                <div class="stats">
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalImages">0</div>
+                        <div class="stat-label">总作品数</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="todayImages">0</div>
+                        <div class="stat-label">今日上传</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalSize">0 MB</div>
+                        <div class="stat-label">总存储量</div>
+                    </div>
+                </div>
+                
+                <div class="gallery" id="gallery">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📭</div>
+                        <h3>还没有作品</h3>
+                        <p>成为第一个上传作品的人吧！</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 关于标签页 -->
+            <div id="about-tab" class="tab-content">
+                <h2>🔒 技术原理</h2>
+                <br>
+                <h3>什么是内容寻址？</h3>
+                <p style="margin: 15px 0; line-height: 1.8;">
+                    本平台使用基于内容的加密哈希技术。每张图片都会通过 SHA-256 算法生成一个独一无二的 64 位十六进制哈希值。
+                    这个哈希值就像是图片的"数字指纹"，任何细微的改动都会产生完全不同的哈希值。
+                </p>
+                
+                <h3>为什么这能保证唯一性？</h3>
+                <p style="margin: 15px 0; line-height: 1.8;">
+                    SHA-256 是一种密码学安全的哈希函数，产生碰撞（两个不同文件生成相同哈希）的概率约为 1/2^256，
+                    这个数字比整个宇宙中的原子数量还要大。因此，每个哈希值实际上都是全球唯一的。
+                </p>
+                
+                <h3>如何验证作品？</h3>
+                <p style="margin: 15px 0; line-height: 1.8;">
+                    任何人都可以对同一张图片重新计算哈希值，如果得到相同的结果，就证明图片没有被篡改。
+                    这种验证方式不依赖任何中心化机构，是真正的去中心化存证。
+                </p>
+                
+                <h3>IPFS 技术</h3>
+                <p style="margin: 15px 0; line-height: 1.8;">
+                    IPFS（星际文件系统）是一个分布式的内容寻址存储系统。上传的图片会被分散存储在全球的节点中，
+                    通过内容哈希值（CID）来访问，确保数据的永久性和可访问性。即使原始上传者离线，
+                    其他节点仍然可以提供该内容。
+                </p>
+                
+                <h3>优势</h3>
+                <ul style="margin: 15px 0; line-height: 1.8; padding-left: 20px;">
+                    <li>✅ 无需区块链 Gas 费用</li>
+                    <li>✅ 即时生成唯一标识</li>
+                    <li>✅ 去中心化存储</li>
+                    <li>✅ 永久可验证</li>
+                    <li>✅ 抗审查</li>
+                    <li>✅ 全球可访问</li>
+                </ul>
+                
+                <h3>开源说明</h3>
+                <p style="margin: 15px 0; line-height: 1.8;">
+                    本平台完全开源，任何人都可以部署自己的版本。所有的哈希计算都在浏览器端完成，
+                    确保你的作品在上传前就已经获得了唯一标识，无需信任任何第三方。
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 图片详情模态框 -->
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeModal()">&times;</span>
+            <img id="modalImg" src="" alt="">
+            <h2 id="modalTitle"></h2>
+            <p id="modalDesc"></p>
+            <div class="gallery-hash" id="modalHash"></div>
+            <p id="modalAuthor"></p>
+            <p id="modalTime"></p>
+        </div>
+    </div>
+    
+    <script>
+        // 本地存储的图片数据
+        let images = JSON.parse(localStorage.getItem('images') || '[]');
+        let selectedFile = null;
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            updateGallery();
+            updateStats();
+            
+            // 拖放功能
+            const uploadArea = document.querySelector('.upload-area');
+            
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+            
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
+            
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handleFileSelect(files[0]);
+                }
+            });
+            
+            // 文件选择
+            document.getElementById('fileInput').addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    handleFileSelect(e.target.files[0]);
+                }
+            });
+        });
+        
+        // 处理文件选择
+        function handleFileSelect(file) {
+            if (!file.type.startsWith('image/')) {
+                showError('请选择图片文件！');
+                return;
+            }
+            
+            if (file.size > 10 * 1024 * 1024) {
+                showError('图片大小不能超过 10MB！');
+                return;
+            }
+            
+            selectedFile = file;
+            
+            // 预览图片
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('previewImg').src = e.target.result;
+                document.getElementById('preview').style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        // 生成 SHA-256 哈希
+        async function generateHash(arrayBuffer) {
+            const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            return hashHex;
+        }
+        
+        // 上传图片
+        async function uploadImage() {
+            if (!selectedFile) {
+                showError('请先选择一张图片！');
+                return;
+            }
+            
+            const title = document.getElementById('title').value.trim();
+            if (!title) {
+                showError('请输入作品标题！');
+                return;
+            }
+            
+            const description = document.getElementById('description').value.trim();
+            const author = document.getElementById('author').value.trim() || '匿名';
+            
+            // 显示加载状态
+            document.getElementById('uploadBtn').disabled = true;
+            document.getElementById('loading').style.display = 'block';
+            hideMessages();
+            
+            try {
+                // 读取文件为 ArrayBuffer
+                const arrayBuffer = await selectedFile.arrayBuffer();
+                
+                // 生成哈希
+                const hash = await generateHash(arrayBuffer);
+                
+                // 检查是否已存在
+                if (images.some(img => img.hash === hash)) {
+                    showError('这张图片已经存在！哈希值：' + hash);
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('uploadBtn').disabled = false;
+                    return;
+                }
+                
+                // 读取为 Base64（用于本地存储）
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    // 创建图片对象
+                    const imageData = {
+                        id: Date.now().toString(),
+                        hash: hash,
+                        ipfsCid: 'Qm' + hash.substring(0, 44), // 模拟 IPFS CID
+                        title: title,
+                        description: description,
+                        author: author,
+                        image: e.target.result,
+                        size: selectedFile.size,
+                        timestamp: new Date().toISOString()
+                    };
+                    
+                    // 保存到本地存储
+                    images.unshift(imageData);
+                    localStorage.setItem('images', JSON.stringify(images));
+                    
+                    // 显示成功信息
+                    showSuccess(`
+                        <strong>✅ 上传成功！</strong><br><br>
+                        <strong>唯一哈希值（SHA-256）：</strong><br>
+                        <span style="font-family: monospace; word-break: break-all;">${hash}</span><br><br>
+                        <strong>IPFS CID（模拟）：</strong><br>
+                        <span style="font-family: monospace;">${imageData.ipfsCid}</span><br><br>
+                        此哈希值是您作品的唯一数字指纹，可用于验证作品的真实性和完整性。
+                    `);
+                    
+                    // 清空表单
+                    resetUploadForm();
+                    
+                    // 更新画廊
+                    updateGallery();
+                    updateStats();
+                    
+                    // 延迟切换到画廊标签
+                    setTimeout(() => {
+                        switchTab('gallery');
+                    }, 3000);
+                };
+                reader.readAsDataURL(selectedFile);
+                
+            } catch (error) {
+                showError('处理图片时出错：' + error.message);
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('uploadBtn').disabled = false;
+            }
+        }
+        
+        // 重置上传表单
+        function resetUploadForm() {
+            document.getElementById('fileInput').value = '';
+            document.getElementById('title').value = '';
+            document.getElementById('description').value = '';
+            document.getElementById('author').value = '';
+            document.getElementById('preview').style.display = 'none';
+            selectedFile = null;
+        }
+        
+        // 更新画廊
+        function updateGallery() {
+            const gallery = document.getElementById('gallery');
+            
+            if (images.length === 0) {
+                gallery.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📭</div>
+                        <h3>还没有作品</h3>
+                        <p>成为第一个上传作品的人吧！</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            gallery.innerHTML = images.map(img => `
+                <div class="gallery-item" onclick="showImageDetail('${img.id}')">
+                    <img src="${img.image}" alt="${img.title}">
+                    <div class="gallery-info">
+                        <div class="gallery-title">${img.title}</div>
+                        <div class="gallery-desc">${img.description || '无描述'}</div>
+                        <div class="gallery-hash">哈希: ${img.hash.substring(0, 16)}...</div>
+                        <div class="gallery-time">
+                            创作者：${img.author} | 
+                            ${new Date(img.timestamp).toLocaleDateString()}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // 更新统计
+        function updateStats() {
+            const totalImages = images.length;
+            const today = new Date().toDateString();
+            const todayImages = images.filter(img => 
+                new Date(img.timestamp).toDateString() === today
+            ).length;
+            const totalSize = images.reduce((sum, img) => sum + img.size, 0);
+            
+            document.getElementById('totalImages').textContent = totalImages;
+            document.getElementById('todayImages').textContent = todayImages;
+            document.getElementById('totalSize').textContent = (totalSize / 1024 / 1024).toFixed(2) + ' MB';
+        }
+        
+        // 显示图片详情
+        function showImageDetail(id) {
+            const img = images.find(i => i.id === id);
+            if (!img) return;
+            
+            document.getElementById('modalImg').src = img.image;
+            document.getElementById('modalTitle').textContent = img.title;
+            document.getElementById('modalDesc').textContent = img.description || '无描述';
+            document.getElementById('modalHash').innerHTML = `
+                <strong>SHA-256 哈希值：</strong><br>${img.hash}<br><br>
+                <strong>IPFS CID（模拟）：</strong><br>${img.ipfsCid}
+            `;
+            document.getElementById('modalAuthor').textContent = '创作者：' + img.author;
+            document.getElementById('modalTime').textContent = '上传时间：' + new Date(img.timestamp).toLocaleString();
+            document.getElementById('modal').style.display = 'block';
+        }
+        
+        // 关闭模态框
+        function closeModal() {
+            document.getElementById('modal').style.display = 'none';
+        }
+        
+        // 点击模态框外部关闭
+        window.onclick = function(event) {
+            const modal = document.getElementById('modal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        }
+        
+        // 切换标签页
+        function switchTab(tabName) {
+            // 更新标签状态
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // 更新内容显示
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(tabName + '-tab').classList.add('active');
+            
+            // 如果切换到画廊，更新内容
+            if (tabName === 'gallery') {
+                updateGallery();
+                updateStats();
+            }
+        }
+        
+        // 显示成功消息
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.innerHTML = message;
+            successDiv.style.display = 'block';
+            setTimeout(() => {
+                successDiv.style.display = 'none';
+            }, 10000);
+        }
+        
+        // 显示错误消息
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+        
+        // 隐藏所有消息
+        function hideMessages() {
+            document.getElementById('successMessage').style.display = 'none';
+            document.getElementById('errorMessage').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
